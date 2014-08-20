@@ -93,6 +93,10 @@ class _AcquireSubcommandOptions(Options):
         return d
 
 
+# XXX implement _WriteHintsSubcommandOptions, similar to
+# _AcquireSubcommandOptions just calling write_hints instead of acquire().
+
+
 @flocker_standard_options
 class VolumeOptions(Options):
     """Command line options for ``flocker-volume`` volume management tool."""
