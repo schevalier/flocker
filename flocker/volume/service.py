@@ -1,14 +1,19 @@
 # Copyright Hybrid Logic Ltd.  See LICENSE file for details.
 # -*- test-case-name: flocker.volume.test.test_service -*-
 
-"""Volume manager service, the main entry point that manages volumes."""
+"""
+Volume manager service, the main entry point that manages volumes.
+"""
 
 from __future__ import absolute_import
 
 import os
+import sys
 import json
 import stat
 from uuid import UUID, uuid4
+
+from zope.interface import Interface, implementer
 
 from characteristic import attributes
 
@@ -22,10 +27,12 @@ from twisted.internet.task import LoopingCall
 # We might want to make these utilities shared, rather than in zfs
 # module... but in this case the usage is temporary and should go away as
 # part of https://github.com/ClusterHQ/flocker/issues/64
-from .filesystems.zfs import _AccumulatingProtocol, CommandFailed
-
+from .filesystems.zfs import _AccumulatingProtocol, CommandFailed, StoragePool
+from ..common.script import ICommandLineScript
 
 DEFAULT_CONFIG_PATH = FilePath(b"/etc/flocker/volume.json")
+FLOCKER_MOUNTPOINT = FilePath(b"/flocker")
+FLOCKER_POOL = b"flocker"
 
 WAIT_FOR_VOLUME_INTERVAL = 0.1
 
@@ -35,7 +42,8 @@ class CreateConfigurationError(Exception):
 
 
 class VolumeService(Service):
-    """Main service for volume management.
+    """
+    Main service for volume management.
 
     :ivar unicode uuid: A unique identifier for this particular node's
         volume manager. Only available once the service has started.
@@ -49,10 +57,11 @@ class VolumeService(Service):
         :param reactor: A ``twisted.internet.interface.IReactorTime`` provider.
         """
         self._config_path = config_path
-        self._pool = pool
+        self.pool = pool
         self._reactor = reactor
 
     def startService(self):
+        Service.startService(self)
         parent = self._config_path.parent()
         try:
             if not parent.exists():
@@ -73,8 +82,8 @@ class VolumeService(Service):
 
         :return: A ``Deferred`` that fires with a :class:`Volume`.
         """
-        volume = Volume(uuid=self.uuid, name=name, _pool=self._pool)
-        d = self._pool.create(volume)
+        volume = Volume(uuid=self.uuid, name=name, service=self)
+        d = self.pool.create(volume)
 
         def created(filesystem):
             filesystem.get_path().chmod(
@@ -95,7 +104,7 @@ class VolumeService(Service):
 
         :return: A ``Volume``.
         """
-        return Volume(uuid=self.uuid, name=name, _pool=self._pool)
+        return Volume(uuid=self.uuid, name=name, service=self)
 
     def wait_for_volume(self, name):
         """
@@ -107,7 +116,7 @@ class VolumeService(Service):
 
         :return: A ``Deferred`` that fires with a :class:`Volume`.
         """
-        volume = Volume(uuid=self.uuid, name=name, _pool=self._pool)
+        volume = Volume(uuid=self.uuid, name=name, service=self)
 
         def check_for_volume(volumes):
             if volume in volumes:
@@ -129,7 +138,7 @@ class VolumeService(Service):
 
         :return: A ``Deferred`` that fires with an iterator of :class:`Volume`.
         """
-        enumerating = self._pool.enumerate()
+        enumerating = self.pool.enumerate()
 
         def enumerated(filesystems):
             for filesystem in filesystems:
@@ -152,7 +161,7 @@ class VolumeService(Service):
                 yield Volume(
                     uuid=unicode(uuid),
                     name=name.decode('utf8'),
-                    _pool=self._pool)
+                    service=self)
         enumerating.addCallback(enumerated)
         return enumerating
 
@@ -204,7 +213,7 @@ class VolumeService(Service):
         """
         if volume_uuid == self.uuid:
             raise ValueError()
-        volume = Volume(uuid=volume_uuid, name=volume_name, _pool=self._pool)
+        volume = Volume(uuid=volume_uuid, name=volume_name, service=self)
         with volume.get_filesystem().writer() as writer:
             for chunk in iter(lambda: input_file.read(1024 * 1024), b""):
                 writer.write(chunk)
@@ -226,7 +235,7 @@ class VolumeService(Service):
         """
         if volume_uuid == self.uuid:
             return fail(ValueError("Can't acquire already-owned volume"))
-        volume = Volume(uuid=volume_uuid, name=volume_name, _pool=self._pool)
+        volume = Volume(uuid=volume_uuid, name=volume_name, service=self)
         return volume.change_owner(self.uuid)
 
     def handoff(self, volume, destination):
@@ -276,17 +285,27 @@ def _docker_command(reactor, arguments):
     return d
 
 
-@attributes(["uuid", "name", "_pool"])
+@attributes(["uuid", "name", "service"])
 class Volume(object):
-    """A data volume's identifier.
+    """
+    A data volume's identifier.
 
-    :ivar unicode uuid: The UUID of the volume manager that owns this volume.
+    :ivar unicode uuid: The UUID of the volume manager that owns
+        this volume.
     :ivar unicode name: The name of the volume. Since volume names must
         match Docker container names, the characters used should be limited to
         those that Docker allows for container names.
-    :ivar _pool: A `flocker.volume.filesystems.interface.IStoragePool`
-        provider where the volume's filesystem is stored.
+    :ivar VolumeService service: The service that stores this volume.
     """
+    def locally_owned(self):
+        """
+        Return whether this volume is locally owned.
+
+        :return: ``True`` if volume's owner is the ``VolumeService`` that
+            is storing it, otherwise ``False``.
+        """
+        return self.uuid == self.service.uuid
+
     def change_owner(self, new_owner_uuid):
         """
         Change which volume manager owns this volume.
@@ -297,8 +316,8 @@ class Volume(object):
             instance once the ownership has been changed.
         """
         new_volume = Volume(uuid=new_owner_uuid, name=self.name,
-                            _pool=self._pool)
-        d = self._pool.change_owner(self, new_volume)
+                            service=self.service)
+        d = self.service.pool.change_owner(self, new_volume)
 
         def filesystem_changed(_):
             return new_volume
@@ -310,7 +329,7 @@ class Volume(object):
 
         :return: The ``IFilesystem`` provider for the volume.
         """
-        return self._pool.get(self)
+        return self.service.pool.get(self)
 
     @property
     def _container_name(self):
@@ -358,3 +377,69 @@ class Volume(object):
         d.addErrback(lambda failure: failure.trap(CommandFailed))
         d.addCallback(lambda _: None)
         return d
+
+
+@implementer(ICommandLineScript)
+class VolumeScript(object):
+    """
+    ``VolumeScript`` is a command line script helper which creates and starts a
+    ``VolumeService`` and then makes it available to another object which
+    implements the rest of the behavior for the command line script.
+
+    :ivar _service_factory: ``VolumeService`` by default but can be
+        overridden for testing purposes.
+    """
+    _service_factory = VolumeService
+
+    @classmethod
+    def _create_volume_service(cls, stderr, reactor, options):
+        """
+        Create a ``VolumeService`` for the given arguments.
+
+        :return: The started ``VolumeService``.
+        """
+        pool = StoragePool(reactor, options["pool"],
+                           FilePath(options["mountpoint"]))
+        service = cls._service_factory(
+            config_path=options["config"], pool=pool, reactor=reactor)
+        try:
+            service.startService()
+        except CreateConfigurationError as e:
+            stderr.write(
+                b"Writing config file %s failed: %s\n" % (
+                    options["config"].path, e)
+            )
+            raise SystemExit(1)
+        return service
+
+    def __init__(self, volume_script, sys_module=sys):
+        """
+        :param ICommandLineVolumeScript volume_script: Another script
+            implementation which will be passed a started ``VolumeService``
+            along with the reactor and script options.
+        """
+        self._volume_script = volume_script
+        self._sys_module = sys_module
+
+    def main(self, reactor, options):
+        """
+        Create and start the ``VolumeService`` and then delegate the rest to
+        the other script object that this object was initialized with.
+        """
+        service = self._create_volume_service(
+            self._sys_module.stderr, reactor, options)
+        return self._volume_script.main(reactor, options, service)
+
+
+class ICommandLineVolumeScript(Interface):
+    """
+    A script which requires a running ``VolumeService`` and can be run by
+    ``FlockerScriptRunner`` and `VolumeScript``.
+    """
+    def main(reactor, options, volume_service):
+        """
+        :param VolumeService volume_service: An already-started volume service.
+
+        See ``ICommandLineScript.main`` for documentation for the other
+        parameters and return value.
+        """

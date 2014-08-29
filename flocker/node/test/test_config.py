@@ -35,20 +35,22 @@ class ApplicationsFromConfigurationTests(SynchronousTestCase):
                 'image': 'clusterhq/mysql',
                 'environment': {
                     'MYSQL_PORT_3306_TCP': 3307,
-                    'WP_ADMIN_USERNAME': None
+                    'WP_ADMIN_USERNAME': "admin"
                 }
             }
         }
+        error_message = (
+            "Application 'mysql-hybridcluster' has a config error. "
+            "Environment variable 'MYSQL_PORT_3306_TCP' must be of type "
+            "string or unicode; got 'int'.")
         parser = Configuration()
         exception = self.assertRaises(ConfigurationError,
                                       parser._parse_environment_config,
                                       'mysql-hybridcluster',
                                       config['mysql-hybridcluster'])
         self.assertEqual(
-            "Application 'mysql-hybridcluster' has a config error. "
-            "Environment variable 'MYSQL_PORT_3306_TCP' must be of type "
-            "string or unicode; got 'int'.",
-            exception.message
+            exception.message,
+            error_message
         )
 
     def test_error_on_environment_vars_not_dict(self):
@@ -221,10 +223,10 @@ class ApplicationsFromConfigurationTests(SynchronousTestCase):
         parser = Configuration()
         environment_vars = parser._parse_environment_config(
             'site-hybridcluster', config['site-hybridcluster'])
-        expected_result = {
+        expected_result = frozenset({
             'MYSQL_PORT_3306_TCP': u'tcp://172.16.255.250:3306',
             'WP_ADMIN_USERNAME': u'administrator',
-        }
+        }.items())
         self.assertEqual(expected_result, environment_vars)
 
     def test_dict_of_applications(self):
@@ -266,12 +268,63 @@ class ApplicationsFromConfigurationTests(SynchronousTestCase):
                                   tag='v1.0.0'),
                 ports=frozenset([Port(internal_port=80,
                                       external_port=8080)]),
-                environment={
+                environment=frozenset({
                     'MYSQL_PORT_3306_TCP': 'tcp://172.16.255.250:3306',
                     'WP_ADMIN_USERNAME': 'administrator'
-                })
+                }.items()))
         }
         self.assertEqual(expected_applications, applications)
+
+    def test_applications_hashable(self):
+        """
+        `Application` instances returned by
+        ``Configuration._applications_from_configuration`` are hashable
+        and a `frozenset` of `Application` instances can be created.
+        """
+        parser = Configuration()
+        config = dict(
+            version=1,
+            applications={
+                'mysql-hybridcluster': {
+                    'image': 'clusterhq/mysql:v1.0.0',
+                    'ports': [dict(internal=3306, external=3306)],
+                    'volume': {'mountpoint': b'/var/lib/mysql'},
+                },
+                'site-hybridcluster': {
+                    'image': 'clusterhq/wordpress:v1.0.0',
+                    'ports': [dict(internal=80, external=8080)],
+                    'volume': {'mountpoint': b'/var/www/data'},
+                    'environment': {
+                        'MYSQL_PORT_3306_TCP': 'tcp://172.16.255.250:3306'
+                    }
+                }
+            }
+        )
+        applications = parser._applications_from_configuration(config)
+        expected_applications = {
+            'mysql-hybridcluster': Application(
+                name='mysql-hybridcluster',
+                image=DockerImage(repository='clusterhq/mysql', tag='v1.0.0'),
+                ports=frozenset([Port(internal_port=3306,
+                                      external_port=3306)]),
+                volume=AttachedVolume(name='mysql-hybridcluster',
+                                      mountpoint=FilePath(b'/var/lib/mysql'))
+            ),
+            'site-hybridcluster': Application(
+                name='site-hybridcluster',
+                image=DockerImage(repository='clusterhq/wordpress',
+                                  tag='v1.0.0'),
+                ports=frozenset([Port(internal_port=80, external_port=8080)]),
+                volume=AttachedVolume(name='site-hybridcluster',
+                                      mountpoint=FilePath(b'/var/www/data')),
+                environment=frozenset({
+                    'MYSQL_PORT_3306_TCP': 'tcp://172.16.255.250:3306'
+                }.items())
+            )
+        }
+        applications_set = frozenset(applications.values())
+        expected_applications_set = frozenset(expected_applications.values())
+        self.assertEqual(applications_set, expected_applications_set)
 
     def test_ports_missing_internal(self):
         """
