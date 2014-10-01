@@ -21,6 +21,7 @@ from ._logging import CREATE_PROXY_TO, DELETE_PROXY, IPTABLES
 from ._interfaces import INetwork
 from ._model import Proxy
 
+# TODO probably make this just "flocker"
 FLOCKER_COMMENT_MARKER = b"flocker create_proxy_to"
 
 
@@ -49,9 +50,11 @@ def iptables(logger, argv):
 
 
 def create_proxy_to(logger, ip, port):
+    # TODO accept a tag argument and append it to FLOCKER_COMMENT_MARKER for use as the comment below
     """
     :see: ``HostNetwork.create_proxy_to``
     """
+    # log the comment too
     action = CREATE_PROXY_TO(
         logger=logger, target_ip=ip, target_port=port)
 
@@ -86,6 +89,7 @@ def create_proxy_to(logger, ip, port):
             b"--match", b"addrtype", b"--dst-type", b"LOCAL",
 
             # Tag it as a flocker-created rule so we can recognize it later.
+            # TODO use it here
             b"--match", b"comment", b"--comment", FLOCKER_COMMENT_MARKER,
 
             # If the filter matched, jump to the DNAT chain to handle doing the
@@ -188,6 +192,7 @@ def delete_proxy(logger, proxy):
          b"--delete", b"PREROUTING",
          b"--protocol", b"tcp", b"--destination-port", port,
          b"--match", b"addrtype", b"--dst-type", b"LOCAL",
+         # TODO use proxy.namespace and FLOCKER_COMMENT_MARKER to construct correct comment
          b"--match", b"comment", b"--comment", FLOCKER_COMMENT_MARKER,
          b"--jump", b"DNAT", b"--to-destination", ip],
         [b"--table", b"nat",
@@ -216,6 +221,7 @@ def enumerate_proxies():
     proxies = []
     for rule in get_flocker_rules():
         proxies.append(
+            # TODO initialize the Proxy's namespace from the rule's comment (strip off the prefix)
             Proxy(ip=rule.to_destination, port=rule.destination_port))
 
     return proxies
@@ -251,6 +257,7 @@ def get_flocker_rules():
 
         options = parse_iptables_options(shlex.split(line))
 
+        # TODO do a startswith("flocker ") instead to get rules for all namespaces
         if options.comment == FLOCKER_COMMENT_MARKER:
             yield options
 
@@ -302,6 +309,7 @@ def parse_iptables_options(argv):
         to_destination=to_destination)
 
 
+# TODO give this a namespace attribute w/ characteristic
 @implementer(INetwork)
 class HostNetwork(object):
     """
@@ -315,6 +323,7 @@ class HostNetwork(object):
 
         :see: :meth:`INetwork.create_proxy_to` for parameter documentation.
         """
+        # TODO pass the namespace in here as the tag value
         return create_proxy_to(self.logger, ip, port)
 
     def delete_proxy(self, proxy):
@@ -323,8 +332,11 @@ class HostNetwork(object):
 
         :see: :meth:`INetwork.delete_proxy` for parameter documentation.
         """
+        # (not-)TODO nothing needed here, namespace info is on the proxy object already
         return delete_proxy(self.logger, proxy)
 
+    # TODO Turn into a real method that filters the proxies by
+    # namespace and returns only those matching self.namespace
     enumerate_proxies = staticmethod(enumerate_proxies)
 
     def enumerate_used_ports(self):
@@ -342,6 +354,7 @@ class HostNetwork(object):
         )
         proxied = set(
             proxy.port
+            # TODO use the global enumerate_proxies instead so that we don't filter based on our namespace.  used ports are global so limiting to one namespace doesn't make sense.
             for proxy in self.enumerate_proxies()
         )
         # net_connections won't tell us about ports bound by sockets that
@@ -349,9 +362,9 @@ class HostNetwork(object):
         return frozenset(listening | proxied)
 
 
-def make_host_network():
+def make_host_network(): # TODO add namespace parameter
     """
     Create a new ``INetwork`` provider which will interact with the underlying
     system's network configuration.
     """
-    return HostNetwork()
+    return HostNetwork() # TODO pass namespace through

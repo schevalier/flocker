@@ -27,3 +27,6 @@ class MemoryProxyTests(SynchronousTestCase):
         network.create_proxy_to(IPAddress("10.0.0.1"), extra)
         expected = frozenset(ports | {extra})
         self.assertEqual(expected, network.enumerate_used_ports())
+
+    # TODO test that proxies from enumerate_proxies have some dummy
+    # namespace name on them

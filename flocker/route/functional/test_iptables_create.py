@@ -337,6 +337,9 @@ class EnumerateTests(TestCase):
         self.addCleanup(create_network_namespace().restore)
         self.network = make_host_network()
 
+    # TODO test that proxies from a different namespace aren't enumerated
+    # TODO test that proxies have the right namespace set on them
+
     def test_unrelated_iptables_rules(self):
         """
         If there are rules in NAT table which aren't related to flocker then

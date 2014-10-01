@@ -16,6 +16,7 @@ class INetwork(Interface):
         "activities.  This is primarily intended as a testing hook which "
         "can be overridden to observe what log messages are written.")
 
+    # TODO add tag argument
     def create_proxy_to(ip, port):
         """
         Create a new TCP proxy to ``ip`` on port ``port``.
