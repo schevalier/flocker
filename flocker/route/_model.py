@@ -7,11 +7,13 @@ Objects related to the representation of Flocker-controlled network state.
 from characteristic import attributes
 
 # TODO add namespace attribute describing for which namespace a proxy exists
-@attributes(["ip", "port"])
+@attributes(["ip", "port", "namespace"])
 class Proxy(object):
     """
     :ivar ipaddr.IPv4Address ip: The IPv4 address towards which this proxy
         directs traffic.
 
     :ivar int port: The TCP port number on which this proxy operates.
+
+    TODO document namespace
     """

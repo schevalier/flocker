@@ -48,7 +48,7 @@ def iptables(logger, argv):
         check_call([b"iptables"] + argv)
 
 
-def create_proxy_to(logger, ip, port):
+def create_proxy_to(logger, ip, port, tag):
     # TODO accept a tag argument and append it to FLOCKER_COMMENT_MARKER for use as the comment below
     """
     :see: ``HostNetwork.create_proxy_to``
@@ -89,7 +89,7 @@ def create_proxy_to(logger, ip, port):
 
             # Tag it as a flocker-created rule so we can recognize it later.
             # TODO use it here
-            b"--match", b"comment", b"--comment", FLOCKER_COMMENT_MARKER,
+            b"--match", b"comment", b"--comment", FLOCKER_COMMENT_MARKER + tag,
 
             # If the filter matched, jump to the DNAT chain to handle doing the
             # actual packet mangling.  DNAT is a built-in chain that already
@@ -176,7 +176,7 @@ def create_proxy_to(logger, ip, port):
             with path.child(b"route_localnet").open("wb") as route_localnet:
                 route_localnet.write(b"1")
 
-        return Proxy(ip=ip, port=port)
+        return Proxy(ip=ip, port=port, namespace=tag)
 
 
 def delete_proxy(logger, proxy):
@@ -185,14 +185,15 @@ def delete_proxy(logger, proxy):
     """
     ip = unicode(proxy.ip).encode("ascii")
     port = unicode(proxy.port).encode("ascii")
-
+    namespace = proxy.namespace.encode("utf-8")
+    
     commands = [
         [b"--table", b"nat",
          b"--delete", b"PREROUTING",
          b"--protocol", b"tcp", b"--destination-port", port,
          b"--match", b"addrtype", b"--dst-type", b"LOCAL",
          # TODO use proxy.namespace and FLOCKER_COMMENT_MARKER to construct correct comment
-         b"--match", b"comment", b"--comment", FLOCKER_COMMENT_MARKER,
+         b"--match", b"comment", b"--comment", FLOCKER_COMMENT_MARKER + namespace,
          b"--jump", b"DNAT", b"--to-destination", ip],
         [b"--table", b"nat",
          b"--delete", b"POSTROUTING",
@@ -219,9 +220,11 @@ def enumerate_proxies():
     """
     proxies = []
     for rule in get_flocker_rules():
+        comment = rule.comment
+        namespace = comment[len(FLOCKER_COMMENT_MARKER):]
         proxies.append(
             # TODO initialize the Proxy's namespace from the rule's comment (strip off the prefix)
-            Proxy(ip=rule.to_destination, port=rule.destination_port))
+git             Proxy(ip=rule.to_destination, port=rule.destination_port, namespace=namespace.decode('utf-8')))
 
     return proxies
 
@@ -257,7 +260,7 @@ def get_flocker_rules():
         options = parse_iptables_options(shlex.split(line))
 
         # TODO do a startswith("flocker ") instead to get rules for all namespaces
-        if options.comment == FLOCKER_COMMENT_MARKER:
+        if options.comment is not None and options.comment.startswith(FLOCKER_COMMENT_MARKER):
             yield options
 
 
@@ -309,6 +312,7 @@ def parse_iptables_options(argv):
 
 
 # TODO give this a namespace attribute w/ characteristic
+@attributes(["namespace"])
 @implementer(INetwork)
 class HostNetwork(object):
     """
@@ -323,7 +327,7 @@ class HostNetwork(object):
         :see: :meth:`INetwork.create_proxy_to` for parameter documentation.
         """
         # TODO pass the namespace in here as the tag value
-        return create_proxy_to(self.logger, ip, port)
+        return create_proxy_to(self.logger, ip, port, self.namespace)
 
     def delete_proxy(self, proxy):
         """
@@ -336,7 +340,12 @@ class HostNetwork(object):
 
     # TODO Turn into a real method that filters the proxies by
     # namespace and returns only those matching self.namespace
-    enumerate_proxies = staticmethod(enumerate_proxies)
+    #enumerate_proxies = staticmethod(enumerate_proxies)
+    def enumerate_proxies(self):
+        all_proxies = enumerate_proxies()
+        proxies_in_this_namespace = list(proxy for proxy in all_proxies if self.namespace == proxy.namespace)
+        return proxies_in_this_namespace
+
 
     def enumerate_used_ports(self):
         """
@@ -361,9 +370,12 @@ class HostNetwork(object):
         return frozenset(listening | proxied)
 
 
-def make_host_network(): # TODO add namespace parameter
+def make_host_network(namespace="default"): # TODO add namespace parameter
     """
     Create a new ``INetwork`` provider which will interact with the underlying
     system's network configuration.
+
+    :TODO document namespace
+    :TODO change tests and don't have a default namespaceenumerate_proxies
     """
-    return HostNetwork() # TODO pass namespace through
+    return HostNetwork(namespace=namespace) # TODO pass namespace through
