@@ -21,8 +21,7 @@ from ._logging import CREATE_PROXY_TO, DELETE_PROXY, IPTABLES
 from ._interfaces import INetwork
 from ._model import Proxy
 
-# TODO probably make this just "flocker"
-FLOCKER_COMMENT_MARKER = b"flocker create_proxy_to"
+FLOCKER_COMMENT_MARKER = b"flocker "
 
 
 @attributes(["comment", "destination_port", "to_destination"])
