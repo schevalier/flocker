@@ -49,9 +49,10 @@ def iptables(logger, argv):
 
 
 def create_proxy_to(logger, ip, port, tag):
-    # TODO accept a tag argument and append it to FLOCKER_COMMENT_MARKER for use as the comment below
     """
     :see: ``HostNetwork.create_proxy_to``
+
+    #TODO document tag
     """
     # log the comment too
     action = CREATE_PROXY_TO(
