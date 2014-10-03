@@ -89,7 +89,6 @@ def create_proxy_to(logger, ip, port, tag):
             b"--match", b"addrtype", b"--dst-type", b"LOCAL",
 
             # Tag it as a flocker-created rule so we can recognize it later.
-            # TODO use it here
             b"--match", b"comment", b"--comment", FLOCKER_COMMENT_MARKER + tag,
 
             # If the filter matched, jump to the DNAT chain to handle doing the
