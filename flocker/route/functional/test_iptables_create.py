@@ -338,7 +338,6 @@ class EnumerateTests(TestCase):
         self.addCleanup(create_network_namespace().restore)
         self.network = make_host_network()
 
-    # TODO test that proxies have the right namespace set on them
     def test_different_namespaces_not_enumerated(self):
         """
         If there are rules in NAT table which aren't related to the given
@@ -352,13 +351,23 @@ class EnumerateTests(TestCase):
 
     def test_proxies_enumerated(self):
         """
-        # TODO document, separate dest for unicode?
+        :py:func:`enumerate_proxies` includes information about rules in the
+        NAT table which are related to the given namespace.
         """
-        unicode_namespace = "\N{HEAVY BLACK HEART}"
-        another_network = make_host_network(u"another_namespace " +
-                                            unicode_namespace)
+        another_network = make_host_network(u"\N{HEAVY BLACK HEART}")
         proxy = another_network.create_proxy_to(IPAddress("10.1.2.3"), 1234)
         self.assertEqual([proxy], another_network.enumerate_proxies())
+
+    def test_proxy_has_namespace(self):
+        """
+        Proxies which :py:func:`enumerate_proxies` returns have the correct
+        namespaces.
+        """
+        namespace = u"my_namespace"
+        another_network = make_host_network(namespace)
+        another_network.create_proxy_to(IPAddress("10.1.2.3"), 1234)
+        proxy = another_network.enumerate_proxies()[0]
+        self.assertEqual(proxy.namespace, namespace)
 
     def test_unrelated_iptables_rules(self):
         """
