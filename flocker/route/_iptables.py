@@ -223,8 +223,8 @@ def enumerate_proxies():
         comment = rule.comment
         namespace = comment[len(FLOCKER_COMMENT_MARKER):]
         proxies.append(
-            # TODO initialize the Proxy's namespace from the rule's comment (strip off the prefix)
-git             Proxy(ip=rule.to_destination, port=rule.destination_port, namespace=namespace.decode('utf-8')))
+             Proxy(ip=rule.to_destination, port=rule.destination_port,
+                   namespace=namespace.decode('utf-8')))
 
     return proxies
 
@@ -311,12 +311,13 @@ def parse_iptables_options(argv):
         to_destination=to_destination)
 
 
-# TODO give this a namespace attribute w/ characteristic
 @attributes(["namespace"])
 @implementer(INetwork)
 class HostNetwork(object):
     """
     An ``INetwork`` implementation based on ``iptables``.
+
+    :TODO: document namespace
     """
     logger = Logger()
 
@@ -326,7 +327,6 @@ class HostNetwork(object):
 
         :see: :meth:`INetwork.create_proxy_to` for parameter documentation.
         """
-        # TODO pass the namespace in here as the tag value
         return create_proxy_to(self.logger, ip, port, self.namespace)
 
     def delete_proxy(self, proxy):
