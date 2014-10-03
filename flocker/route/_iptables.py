@@ -260,8 +260,8 @@ def get_flocker_rules():
 
         options = parse_iptables_options(shlex.split(line))
 
-        # TODO do a startswith("flocker ") instead to get rules for all namespaces
-        if options.comment is not None and options.comment.startswith(FLOCKER_COMMENT_MARKER):
+        if (options.comment is not None and
+            options.comment.startswith(FLOCKER_COMMENT_MARKER)):
             yield options
 
 
