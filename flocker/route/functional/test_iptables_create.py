@@ -338,27 +338,28 @@ class EnumerateTests(TestCase):
         self.addCleanup(create_network_namespace().restore)
         self.network = make_host_network()
 
-    # TODO test that proxies from a different namespace aren't enumerated
     # TODO test that proxies have the right namespace set on them
     def test_different_namespaces_not_enumerated(self):
-       """
-       If there are rules in NAT table which aren't related to the given
-       namespace then
-       :py:func:`enumerate_proxies` does not include information about them in
-       its return function.
-       """
-       another_network = make_host_network(u"another_namespace")
-       proxy = self.network.create_proxy_to(IPAddress("10.1.2.3"), 1234)
-       self.assertEqual([], another_network.enumerate_proxies())
+        """
+        If there are rules in NAT table which aren't related to the given
+        namespace then
+        :py:func:`enumerate_proxies` does not include information about them in
+        its return function.
+        """
+        another_network = make_host_network(u"another_namespace")
+        self.network.create_proxy_to(IPAddress("10.1.2.3"), 1234)
+        self.assertEqual([], another_network.enumerate_proxies())
 
     def test_proxies_enumerated(self):
         """
+        # TODO document, separate dest for unicode?
         """
-        another_network = make_host_network(u"another_namespace \N{HEAVY BLACK HEART}")
+        unicode_namespace = "\N{HEAVY BLACK HEART}"
+        another_network = make_host_network(u"another_namespace " +
+                                            unicode_namespace)
         proxy = another_network.create_proxy_to(IPAddress("10.1.2.3"), 1234)
         self.assertEqual([proxy], another_network.enumerate_proxies())
-    
-# 
+
     def test_unrelated_iptables_rules(self):
         """
         If there are rules in NAT table which aren't related to flocker then

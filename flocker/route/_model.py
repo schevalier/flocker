@@ -6,7 +6,7 @@ Objects related to the representation of Flocker-controlled network state.
 
 from characteristic import attributes
 
-# TODO add namespace attribute describing for which namespace a proxy exists
+
 @attributes(["ip", "port", "namespace"])
 class Proxy(object):
     """
@@ -15,5 +15,5 @@ class Proxy(object):
 
     :ivar int port: The TCP port number on which this proxy operates.
 
-    TODO document namespace
+    TODO document namespace (describes for which namespace a proxy exists)
     """

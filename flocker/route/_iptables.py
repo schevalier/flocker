@@ -187,14 +187,14 @@ def delete_proxy(logger, proxy):
     ip = unicode(proxy.ip).encode("ascii")
     port = unicode(proxy.port).encode("ascii")
     namespace = proxy.namespace.encode("utf-8")
-    
+    comment = FLOCKER_COMMENT_MARKER + namespace
+
     commands = [
         [b"--table", b"nat",
          b"--delete", b"PREROUTING",
          b"--protocol", b"tcp", b"--destination-port", port,
          b"--match", b"addrtype", b"--dst-type", b"LOCAL",
-         # TODO use proxy.namespace and FLOCKER_COMMENT_MARKER to construct correct comment
-         b"--match", b"comment", b"--comment", FLOCKER_COMMENT_MARKER + namespace,
+         b"--match", b"comment", b"--comment", comment,
          b"--jump", b"DNAT", b"--to-destination", ip],
         [b"--table", b"nat",
          b"--delete", b"POSTROUTING",
@@ -224,8 +224,8 @@ def enumerate_proxies():
         comment = rule.comment
         namespace = comment[len(FLOCKER_COMMENT_MARKER):]
         proxies.append(
-             Proxy(ip=rule.to_destination, port=rule.destination_port,
-                   namespace=namespace.decode('utf-8')))
+            Proxy(ip=rule.to_destination, port=rule.destination_port,
+                  namespace=namespace.decode('utf-8')))
 
     return proxies
 
@@ -261,7 +261,7 @@ def get_flocker_rules():
         options = parse_iptables_options(shlex.split(line))
 
         if (options.comment is not None and
-            options.comment.startswith(FLOCKER_COMMENT_MARKER)):
+                options.comment.startswith(FLOCKER_COMMENT_MARKER)):
             yield options
 
 
@@ -336,17 +336,13 @@ class HostNetwork(object):
 
         :see: :meth:`INetwork.delete_proxy` for parameter documentation.
         """
-        # (not-)TODO nothing needed here, namespace info is on the proxy object already
         return delete_proxy(self.logger, proxy)
 
-    # TODO Turn into a real method that filters the proxies by
-    # namespace and returns only those matching self.namespace
-    #enumerate_proxies = staticmethod(enumerate_proxies)
     def enumerate_proxies(self):
         all_proxies = enumerate_proxies()
-        proxies_in_this_namespace = list(proxy for proxy in all_proxies if self.namespace == proxy.namespace)
+        proxies_in_this_namespace = list(proxy for proxy in all_proxies if
+                                         self.namespace == proxy.namespace)
         return proxies_in_this_namespace
-
 
     def enumerate_used_ports(self):
         """
@@ -363,7 +359,9 @@ class HostNetwork(object):
         )
         proxied = set(
             proxy.port
-            # TODO use the global enumerate_proxies instead so that we don't filter based on our namespace.  used ports are global so limiting to one namespace doesn't make sense.
+            # TODO use the global enumerate_proxies instead so that we don't
+            # filter based on our namespace.  used ports are global so limiting
+            # to one namespace doesn't make sense.
             for proxy in self.enumerate_proxies()
         )
         # net_connections won't tell us about ports bound by sockets that
@@ -371,7 +369,7 @@ class HostNetwork(object):
         return frozenset(listening | proxied)
 
 
-def make_host_network(namespace="default"): # TODO add namespace parameter
+def make_host_network(namespace="default"):
     """
     Create a new ``INetwork`` provider which will interact with the underlying
     system's network configuration.
@@ -379,4 +377,4 @@ def make_host_network(namespace="default"): # TODO add namespace parameter
     :TODO document namespace
     :TODO change tests and don't have a default namespaceenumerate_proxies
     """
-    return HostNetwork(namespace=namespace) # TODO pass namespace through
+    return HostNetwork(namespace=namespace)
