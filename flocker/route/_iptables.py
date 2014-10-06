@@ -48,6 +48,8 @@ def iptables(logger, argv):
         check_call([b"iptables"] + argv)
 
 
+# TODO "tag" vs "namespace" might be confusing. I left it in because it went
+# through a design review. Reviewer?
 def create_proxy_to(logger, ip, port, tag):
     """
     :see: ``HostNetwork.create_proxy_to``
