@@ -104,6 +104,7 @@ class StartApplication(object):
 
         volumes = []
         if application.volume is not None:
+            # TODO: Just use application.volume.name, it will be a VolumeName.
             volume = deployer.volume_service.get(
                 _to_volume_name(application.volume.name))
             volumes.append(DockerVolume(
@@ -195,6 +196,7 @@ class CreateVolume(object):
     """
     def run(self, deployer):
         return deployer.volume_service.create(
+            # TODO: Just use application.volume.name, it will be a VolumeName.
             _to_volume_name(self.volume.name))
 
 
@@ -208,6 +210,7 @@ class WaitForVolume(object):
     """
     def run(self, deployer):
         return deployer.volume_service.wait_for_volume(
+            # TODO: Just use application.volume.name, it will be a VolumeName.
             _to_volume_name(self.volume.name))
 
 
@@ -227,6 +230,7 @@ class HandoffVolume(object):
     def run(self, deployer):
         service = deployer.volume_service
         destination = standard_node(self.hostname)
+        # TODO: Just use application.volume.name, it will be a VolumeName.
         return service.handoff(service.get(_to_volume_name(self.volume.name)),
                                RemoteVolumeManager(destination))
 
@@ -247,6 +251,7 @@ class PushVolume(object):
     def run(self, deployer):
         service = deployer.volume_service
         destination = standard_node(self.hostname)
+        # TODO: Just use application.volume.name, it will be a VolumeName.
         return service.push(service.get(_to_volume_name(self.volume.name)),
                             RemoteVolumeManager(destination))
 
