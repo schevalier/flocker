@@ -313,6 +313,9 @@ class Deployer(object):
         # strip the namespace since there will only ever be one.
         volumes = self.volume_service.enumerate()
         # TODO Also exclude any volumes with a VolumeName in a namespace other than the volume_namespace used to initialize this object.
+        # TODO   - changestate wants to discover configuration limited to a single namespace
+        # TODO   - reportstate wants to discover configuration for all namespaces
+        # TODO   -> make sure both of these are still possible
         volumes.addCallback(lambda volumes: set(
             volume.name.id for volume in volumes
             if volume.uuid == self.volume_service.uuid))

@@ -149,10 +149,10 @@ class ChangeStateScript(object):
         #
         # TODO Create an INetwork provider here.  Use the correct namespace from the given options.
         #
-        # TODO How do volumes fit into this?  We're given the volume service as an argument.
-        #      Perhaps scrounge in the configuration objects and rewrite volume names to reflect the desired namespace?  Ugh.  Think of something better.
-
+        # TODO Pass the namespace in to the Deployer as a volume namespace.
+        #      Deployer needs to create VolumeNames with the right namespace.
         deployer = Deployer(volume_service, self._docker_client)
+
         return deployer.change_node_state(
             desired_state=options['deployment'],
             current_cluster_state=options['current'],
