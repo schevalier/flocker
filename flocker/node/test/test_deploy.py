@@ -1427,13 +1427,14 @@ class SetProxiesTests(SynchronousTestCase):
         """
         Proxies which are required are added.
         """
-        fake_network = make_memory_network()
+        namespace = "my_namespace"
+        fake_network = make_memory_network(namespace=namespace)
         api = Deployer(
             create_volume_service(self), docker_client=FakeDockerClient(),
             network=fake_network)
 
         expected_proxy = Proxy(ip=u'192.0.2.100', port=3306,
-                               namespace="my_namespace")
+                               namespace=namespace)
         d = SetProxies(ports=[expected_proxy]).run(api)
         self.successResultOf(d)
         self.assertEqual(
