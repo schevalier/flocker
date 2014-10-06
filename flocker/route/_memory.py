@@ -6,11 +6,13 @@ Objects related to an in-memory implementation of ``INetwork``.
 
 from zope.interface import implementer
 from eliot import Logger
+from characteristic import attributes
 
 from ._interfaces import INetwork
 from ._model import Proxy
 
 
+@attributes(["namespace"])
 @implementer(INetwork)
 class MemoryNetwork(object):
     """
@@ -26,7 +28,7 @@ class MemoryNetwork(object):
         self._used_ports = used_ports
 
     def create_proxy_to(self, ip, port):
-        proxy = Proxy(ip=ip, port=port)
+        proxy = Proxy(ip=ip, port=port, namespace=self.namespace)
         self._proxies.add(proxy)
         return proxy
 
@@ -49,4 +51,4 @@ def make_memory_network(used_ports=frozenset()):
         already used and included in the result of ``enumerate_used_ports``
         when called on the returned object.
     """
-    return MemoryNetwork(used_ports=used_ports)
+    return MemoryNetwork(used_ports=used_ports, namespace="my_namespace")
