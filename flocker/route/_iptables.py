@@ -52,7 +52,7 @@ def create_proxy_to(logger, ip, port, tag):
     """
     :see: ``HostNetwork.create_proxy_to``
 
-    #TODO document tag
+    :param unicode tag: See ``HostNetwork`` documentation for ``namespace``.
     """
     # log the comment too
     action = CREATE_PROXY_TO(
@@ -317,7 +317,8 @@ class HostNetwork(object):
     """
     An ``INetwork`` implementation based on ``iptables``.
 
-    :TODO: document namespace
+    :param unicode namespace: A namespace for proxies configured
+        on this network.
     """
     logger = Logger()
 
@@ -373,7 +374,9 @@ def make_host_network(namespace="default"):
     Create a new ``INetwork`` provider which will interact with the underlying
     system's network configuration.
 
-    :TODO document namespace
-    :TODO change tests and don't have a default namespaceenumerate_proxies
+    :see: ``HostNetwork`` for parameter documentation.
+
+    # TODO change tests and don't have a default names
+          (for memory equivalent too)
     """
     return HostNetwork(namespace=namespace)
