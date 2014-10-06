@@ -344,8 +344,7 @@ class EnumerateTests(TestCase):
         """
         If there are rules in NAT table which aren't related to the given
         namespace then
-        :py:func:`enumerate_proxies` does not include information about them in
-        its return function.
+        :py:func:`enumerate_proxies` does not return information about them.
         """
         another_network = make_host_network(u"another_namespace")
         self.network.create_proxy_to(IPAddress("10.1.2.3"), 1234)
@@ -353,9 +352,8 @@ class EnumerateTests(TestCase):
 
     def test_default_namespace(self):
         """
-        After :py:meth:`INetwork.create_proxy_to` is used to create a
-        proxy, :py:meth:`INetwork.enumerate_proxies` returns a proxy with a
-        default namespace.
+        If no namespace is passed to ``make_host_network``,
+        ``enumerate_proxies`` returns proxies with a default namespace.
         """
         ip = IPAddress("10.2.3.4")
         port = 4321

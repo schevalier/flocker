@@ -8,7 +8,7 @@ from zope.interface.verify import verifyObject
 from ipaddr import IPAddress
 from twisted.trial.unittest import SynchronousTestCase
 
-from .. import INetwork, Proxy
+from .. import INetwork
 
 
 def make_proxying_tests(make_network):

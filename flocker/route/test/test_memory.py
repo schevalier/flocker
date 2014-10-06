@@ -41,9 +41,8 @@ class MemoryProxyTests(SynchronousTestCase):
 
     def test_default_namespace(self):
         """
-        After :py:meth:`INetwork.create_proxy_to` is used to create a
-        proxy, :py:meth:`INetwork.enumerate_proxies` returns a proxy with a
-        default namespace.
+        If no namespace is passed to ``make_memory_network``,
+        ``enumerate_proxies`` returns proxies with a default namespace.
         """
         ip = IPAddress("10.2.3.4")
         port = 4321
