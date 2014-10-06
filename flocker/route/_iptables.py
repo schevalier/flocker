@@ -54,9 +54,8 @@ def create_proxy_to(logger, ip, port, tag):
 
     :param unicode tag: See ``HostNetwork`` documentation for ``namespace``.
     """
-    # log the comment too
     action = CREATE_PROXY_TO(
-        logger=logger, target_ip=ip, target_port=port)
+        logger=logger, target_ip=ip, target_port=port, namespace=tag)
 
     with action:
         encoded_ip = unicode(ip).encode("ascii")
@@ -206,7 +205,8 @@ def delete_proxy(logger, proxy):
          b"--jump", b"DNAT", b"--to-destination", ip],
     ]
 
-    with DELETE_PROXY(logger, target_ip=proxy.ip, target_port=proxy.port):
+    with DELETE_PROXY(logger, target_ip=proxy.ip, target_port=proxy.port,
+                      namespace=proxy.namespace):
         for argv in commands:
             iptables(logger, argv)
 
