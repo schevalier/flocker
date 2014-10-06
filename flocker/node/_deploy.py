@@ -291,6 +291,7 @@ class Deployer(object):
     :ivar INetwork network: The network routing API to use in
         deployment operations. Default is iptables-based implementation.
     """
+    # TODO Add a volume_namespace parameter here.  Save the value for later.
     def __init__(self, volume_service, docker_client=None, network=None):
         if docker_client is None:
             docker_client = DockerClient()
@@ -311,6 +312,7 @@ class Deployer(object):
         # https://github.com/ClusterHQ/flocker/issues/737; for now we just
         # strip the namespace since there will only ever be one.
         volumes = self.volume_service.enumerate()
+        # TODO Also exclude any volumes with a VolumeName in a namespace other than the volume_namespace used to initialize this object.
         volumes.addCallback(lambda volumes: set(
             volume.name.id for volume in volumes
             if volume.uuid == self.volume_service.uuid))
@@ -329,6 +331,7 @@ class Deployer(object):
                 if unit.name in available_volumes:
                     # XXX Mountpoint is not available, see
                     # https://github.com/ClusterHQ/flocker/issues/289
+                    # TODO Make the AttachedVolume's name be the VolumeName so that the namespace information is available to whoever we pass this on to.
                     volume = AttachedVolume(name=unit.name, mountpoint=None)
                 else:
                     volume = None
