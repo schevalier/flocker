@@ -143,26 +143,6 @@ class IPTablesProxyTests(make_proxying_tests(make_host_network)):
         self.addCleanup(self.namespace.restore)
         super(IPTablesProxyTests, self).setUp()
 
-    def test_proxied_ports_used_different_namespace(self):
-        """
-        :py:meth:`INetwork.enumerate_used_ports` does not limit used ports
-        to those in the network's namespace, because used ports are global.
-        """
-        # Some random, not-very-likely-to-be-bound port number.  It's not a
-        # disaster if this does accidentally collide with a port in use on
-        # the host when the test suite runs but the test only demonstrates
-        # what it's meant to demonstrate when it doesn't collide.
-
-        # TODO This is not in `make_proxying_tests` because the memory
-        # implementation doesn't know which ports have been used by other
-        # networks. This should be resolved perhaps only by a change in the
-        # docstring of this class.
-        port_number = 18173
-        network = make_host_network()
-        network.create_proxy_to(IPAddress("10.0.0.3"), port_number)
-        another_network = make_host_network(namespace="another_namespace")
-        self.assertIn(port_number, another_network.enumerate_used_ports())
-
 
 class CreateTests(TestCase):
     """
@@ -524,3 +504,19 @@ class UsedPortsTests(TestCase):
 
         self.assertIn(
             client.getsockname()[1], network.enumerate_used_ports())
+
+    def test_proxied_ports_used_different_namespace(self):
+        """
+        :py:meth:`INetwork.enumerate_used_ports` does not limit used ports
+        to those in the network's namespace, because used ports are global.
+        """
+        # Some random, not-very-likely-to-be-bound port number.  It's not a
+        # disaster if this does accidentally collide with a port in use on
+        # the host when the test suite runs but the test only demonstrates
+        # what it's meant to demonstrate when it doesn't collide.
+
+        port_number = 18173
+        network = make_host_network()
+        network.create_proxy_to(IPAddress("10.0.0.3"), port_number)
+        another_network = make_host_network(namespace="another_namespace")
+        self.assertIn(port_number, another_network.enumerate_used_ports())
