@@ -369,7 +369,7 @@ class HostNetwork(object):
         return frozenset(listening | proxied)
 
 
-def make_host_network(namespace="default"):
+def make_host_network(namespace=u"default"):
     """
     Create a new ``INetwork`` provider which will interact with the underlying
     system's network configuration.

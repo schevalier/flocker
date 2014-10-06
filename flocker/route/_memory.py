@@ -46,7 +46,7 @@ class MemoryNetwork(object):
         return proxy_ports | self._used_ports
 
 
-def make_memory_network(used_ports=frozenset(), namespace="default"):
+def make_memory_network(used_ports=frozenset(), namespace=u"default"):
     """
     Create a new, isolated, in-memory-only provider of ``INetwork``.
 
