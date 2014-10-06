@@ -340,7 +340,8 @@ class HostNetwork(object):
 
     def enumerate_proxies(self):
         """
-        Find all the proxies which exist on this network.
+        Find all the proxies which exist on this network in the current
+        namespace.
         """
         all_proxies = enumerate_proxies()
         proxies_in_this_namespace = list(proxy for proxy in all_proxies if
