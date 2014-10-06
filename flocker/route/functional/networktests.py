@@ -8,7 +8,7 @@ from zope.interface.verify import verifyObject
 from ipaddr import IPAddress
 from twisted.trial.unittest import SynchronousTestCase
 
-from .. import INetwork
+from .. import INetwork, Proxy
 
 
 def make_proxying_tests(make_network):
@@ -107,5 +107,18 @@ def make_proxying_tests(make_network):
             self.network.create_proxy_to(
                 IPAddress("10.0.0.3"), port_number)
             self.assertIn(port_number, self.network.enumerate_used_ports())
+
+        def test_default_namespace(self):
+            """
+            After :py:meth:`INetwork.create_proxy_to` is used to create a
+            proxy, :py:meth:`INetwork.enumerate_proxies` proxies with a default
+            namespace.
+            """
+            ip = IPAddress("10.2.3.4")
+            port = 4321
+            namespace = "default"
+            self.network.create_proxy_to(ip, 4321)
+            expected = Proxy(ip=ip, port=port, namespace=namespace)
+            self.assertEqual([expected], self.network.enumerate_proxies())
 
     return ProxyingTests

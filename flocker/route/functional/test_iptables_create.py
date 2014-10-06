@@ -379,6 +379,7 @@ class EnumerateTests(TestCase):
         proxy = another_network.create_proxy_to(IPAddress("10.1.2.3"), 1234)
         self.assertEqual([proxy], another_network.enumerate_proxies())
 
+    # TODO move this somewhere which also tests the memory implementation.
     def test_proxy_has_namespace(self):
         """
         Proxies which :py:func:`enumerate_proxies` returns have the correct
