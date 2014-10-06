@@ -339,6 +339,9 @@ class HostNetwork(object):
         return delete_proxy(self.logger, proxy)
 
     def enumerate_proxies(self):
+        """
+        # TODO document this
+        """
         all_proxies = enumerate_proxies()
         proxies_in_this_namespace = list(proxy for proxy in all_proxies if
                                          self.namespace == proxy.namespace)
