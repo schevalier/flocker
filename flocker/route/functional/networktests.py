@@ -108,6 +108,8 @@ def make_proxying_tests(make_network):
                 IPAddress("10.0.0.3"), port_number)
             self.assertIn(port_number, self.network.enumerate_used_ports())
 
+        # TODO this is not a feature of INetworks, so move it (duplicate for
+        # memory and HostNetwork implementations)
         def test_default_namespace(self):
             """
             After :py:meth:`INetwork.create_proxy_to` is used to create a
