@@ -362,7 +362,8 @@ class HostNetwork(object):
             # TODO use the global enumerate_proxies instead so that we don't
             # filter based on our namespace.  used ports are global so limiting
             # to one namespace doesn't make sense.
-            for proxy in self.enumerate_proxies()
+            # XXX above also applies to in memory implementation.
+            for proxy in enumerate_proxies()
         )
         # net_connections won't tell us about ports bound by sockets that
         # haven't entered the TCP state graph yet.

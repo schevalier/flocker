@@ -20,6 +20,8 @@ class MemoryNetwork(object):
 
     :ivar set _proxies: A ``set`` of ``Proxy`` instances representing all of
         the proxies supposedly configured on this network.
+
+    # TODO document namespace
     """
     logger = Logger()
 
@@ -43,12 +45,14 @@ class MemoryNetwork(object):
         return proxy_ports | self._used_ports
 
 
-def make_memory_network(used_ports=frozenset()):
+def make_memory_network(used_ports=frozenset(), namespace="default"):
     """
     Create a new, isolated, in-memory-only provider of ``INetwork``.
 
     :param frozenset used_ports: Some port numbers which are to be considered
         already used and included in the result of ``enumerate_used_ports``
         when called on the returned object.
+
+    # TODO document namespace
     """
-    return MemoryNetwork(used_ports=used_ports, namespace="my_namespace")
+    return MemoryNetwork(used_ports=used_ports, namespace=namespace)
