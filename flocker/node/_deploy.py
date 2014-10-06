@@ -387,6 +387,9 @@ class Deployer(object):
                     for port in application.ports:
                         # XXX: also need to do DNS resolution. See
                         # https://github.com/ClusterHQ/flocker/issues/322
+                        # XXX Given that the namespace is needed here, should
+                        # INetwork just have a namespace attribute?
+                        # Or am I doing it wrong?
                         proxy = Proxy(ip=node.hostname,
                                       port=port.external_port,
                                       namespace=self.network.namespace)
