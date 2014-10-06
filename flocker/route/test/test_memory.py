@@ -8,7 +8,7 @@ from ipaddr import IPAddress
 
 from twisted.trial.unittest import SynchronousTestCase
 
-from .. import make_memory_network
+from .. import make_memory_network, Proxy
 
 
 class MemoryProxyTests(SynchronousTestCase):
@@ -38,3 +38,17 @@ class MemoryProxyTests(SynchronousTestCase):
         another_network.create_proxy_to(IPAddress("10.1.2.3"), 1234)
         proxy = another_network.enumerate_proxies()[0]
         self.assertEqual(proxy.namespace, namespace)
+
+    def test_default_namespace(self):
+        """
+        After :py:meth:`INetwork.create_proxy_to` is used to create a
+        proxy, :py:meth:`INetwork.enumerate_proxies` returns a proxy with a
+        default namespace.
+        """
+        ip = IPAddress("10.2.3.4")
+        port = 4321
+        namespace = "default"
+        network = make_memory_network()
+        network.create_proxy_to(ip, 4321)
+        expected = Proxy(ip=ip, port=port, namespace=namespace)
+        self.assertEqual([expected], network.enumerate_proxies())

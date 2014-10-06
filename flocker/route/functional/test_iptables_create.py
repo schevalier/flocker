@@ -24,6 +24,7 @@ from twisted.python.procutils import which
 from ...testtools import if_root
 from .. import make_host_network
 from .._logging import CREATE_PROXY_TO, DELETE_PROXY, IPTABLES
+from .._model import Proxy
 from .networktests import make_proxying_tests
 
 try:
@@ -349,6 +350,19 @@ class EnumerateTests(TestCase):
         another_network = make_host_network(u"another_namespace")
         self.network.create_proxy_to(IPAddress("10.1.2.3"), 1234)
         self.assertEqual([], another_network.enumerate_proxies())
+
+    def test_default_namespace(self):
+        """
+        After :py:meth:`INetwork.create_proxy_to` is used to create a
+        proxy, :py:meth:`INetwork.enumerate_proxies` returns a proxy with a
+        default namespace.
+        """
+        ip = IPAddress("10.2.3.4")
+        port = 4321
+        namespace = "default"
+        self.network.create_proxy_to(ip, 4321)
+        expected = Proxy(ip=ip, port=port, namespace=namespace)
+        self.assertEqual([expected], self.network.enumerate_proxies())
 
     def test_proxies_enumerated(self):
         """
