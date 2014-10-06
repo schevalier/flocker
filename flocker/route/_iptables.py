@@ -317,7 +317,7 @@ class HostNetwork(object):
     """
     An ``INetwork`` implementation based on ``iptables``.
 
-    :param unicode namespace: A namespace for proxies configured
+    :ivar unicode namespace: A namespace for proxies configured
         on this network.
     """
     logger = Logger()
@@ -376,7 +376,7 @@ def make_host_network(namespace="default"):
 
     :see: ``HostNetwork`` for parameter documentation.
 
-    # TODO change tests and don't have a default names
+    # TODO Don't have a default namespace? This would mean changing many tests
           (for memory equivalent too)
     """
     return HostNetwork(namespace=namespace)

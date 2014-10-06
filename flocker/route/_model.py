@@ -15,5 +15,6 @@ class Proxy(object):
 
     :ivar int port: The TCP port number on which this proxy operates.
 
-    TODO document namespace (describes for which namespace a proxy exists)
+    :ivar unicode namespace: The namespace of the application towards which
+        this proxy directs traffic.
     """

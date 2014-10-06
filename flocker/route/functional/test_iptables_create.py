@@ -2,7 +2,8 @@
 
 """
 Tests for :py:mod:`flocker.route._iptables`.
-# TODO rename this module
+# TODO rename this module to "test_iptables" - after the contents changes
+# have been approved in review
 """
 
 from __future__ import print_function
