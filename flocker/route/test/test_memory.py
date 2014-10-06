@@ -27,3 +27,14 @@ class MemoryProxyTests(SynchronousTestCase):
         network.create_proxy_to(IPAddress("10.0.0.1"), extra)
         expected = frozenset(ports | {extra})
         self.assertEqual(expected, network.enumerate_used_ports())
+
+    def test_proxy_has_namespace(self):
+        """
+        Proxies which :py:func:`enumerate_proxies` returns have the namespace
+        passed to ``make_memory_network``.
+        """
+        namespace = u"my_namespace"
+        another_network = make_memory_network(namespace)
+        another_network.create_proxy_to(IPAddress("10.1.2.3"), 1234)
+        proxy = another_network.enumerate_proxies()[0]
+        self.assertEqual(proxy.namespace, namespace)
