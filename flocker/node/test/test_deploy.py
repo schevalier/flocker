@@ -1430,7 +1430,8 @@ class SetProxiesTests(SynchronousTestCase):
             create_volume_service(self), docker_client=FakeDockerClient(),
             network=fake_network)
 
-        expected_proxy = Proxy(ip=u'192.0.2.100', port=3306)
+        expected_proxy = Proxy(ip=u'192.0.2.100', port=3306,
+                               namespace="my_namespace")
         d = SetProxies(ports=[expected_proxy]).run(api)
         self.successResultOf(d)
         self.assertEqual(
@@ -1515,7 +1516,8 @@ class SetProxiesTests(SynchronousTestCase):
             create_volume_service(self), docker_client=FakeDockerClient(),
             network=fake_network)
 
-        d = SetProxies(ports=[Proxy(ip=u'192.0.2.100', port=3306)]).run(api)
+        proxy = Proxy(ip=u'192.0.2.100', port=3306, namespace="my_namespace")
+        d = SetProxies(ports=[proxy]).run(api)
         exception = self.failureResultOf(d, FirstError)
         self.assertIsInstance(
             exception.value.subFailure.value,
@@ -1534,10 +1536,11 @@ class SetProxiesTests(SynchronousTestCase):
             create_volume_service(self), docker_client=FakeDockerClient(),
             network=fake_network)
 
+        namespace = "my_namespace"
         d = SetProxies(
-            ports=[Proxy(ip=u'192.0.2.100', port=3306),
-                   Proxy(ip=u'192.0.2.101', port=3306),
-                   Proxy(ip=u'192.0.2.102', port=3306)]
+            ports=[Proxy(ip=u'192.0.2.100', port=3306, namespace=namespace),
+                   Proxy(ip=u'192.0.2.101', port=3306, namespace=namespace),
+                   Proxy(ip=u'192.0.2.102', port=3306, namespace=namespace)]
         ).run(api)
 
         self.failureResultOf(d, FirstError)
